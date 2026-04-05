@@ -1,0 +1,311 @@
+```html
+<!DOCTYPE html>
+<html lang="hi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>अखिल बिहार यादव महासभा | Akhil Bihar Yadav Mahasabha</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts for Hindi (Mukta) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        saffron: {
+                            500: '#FF9933',
+                            600: '#E68A2E',
+                            700: '#CC7A29',
+                        },
+                        indiaGreen: '#138808',
+                        navyBlue: '#000080'
+                    },
+                    fontFamily: {
+                        hindi: ['Mukta', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Mukta', sans-serif;
+        }
+        .hero-pattern {
+            background-color: #ffffff;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1596414436573-0d53c7ce4222?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        /* Loader animation for API calls */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #FF9933;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Hide scrollbar for news section but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+    <!-- Top Bar -->
+    <div class="bg-navyBlue text-white text-sm py-2 px-4 hidden md:block">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex space-x-6 font-medium">
+                <span><i class="fas fa-envelope mr-2 text-saffron-500"></i> info@biharyadavmahasabha.org</span>
+                <span><i class="fas fa-phone-alt mr-2 text-saffron-500"></i> +91 98765 43210</span>
+            </div>
+            <div class="flex space-x-4">
+                <a href="#" class="hover:text-saffron-500 transition"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="hover:text-saffron-500 transition"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="hover:text-saffron-500 transition"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20">
+                <div class="flex items-center">
+                    <!-- Logo -->
+                    <div class="flex-shrink-0 flex items-center gap-3">
+                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-saffron-500 flex items-center justify-center text-white text-xl md:text-2xl shadow-md border-2 border-indiaGreen">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-xl md:text-2xl text-saffron-600 leading-tight">अखिल बिहार यादव महासभा</span>
+                            <span class="text-[10px] md:text-xs font-semibold text-indiaGreen tracking-wider">सामाजिक न्याय और सशक्तिकरण</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden lg:flex items-center space-x-5 xl:space-x-8 text-lg">
+                    <a href="#home" class="text-gray-700 hover:text-saffron-600 font-medium transition">होम</a>
+                    <a href="#about" class="text-gray-700 hover:text-saffron-600 font-medium transition">परिचय</a>
+                    <a href="#leadership" class="text-gray-700 hover:text-saffron-600 font-medium transition">अध्यक्ष</a>
+                    <a href="#news-events" class="text-gray-700 hover:text-saffron-600 font-medium transition">समाचार व कार्यक्रम</a>
+                    <a href="#gallery" class="text-gray-700 hover:text-saffron-600 font-medium transition">गैलरी</a>
+                    <a href="#tools" class="text-saffron-600 font-bold hover:text-saffron-700 transition flex items-center gap-1">✨ AI सहायता</a>
+                    <a href="#contact" class="bg-saffron-500 text-white px-5 py-2 rounded-md hover:bg-saffron-600 font-medium shadow-md transition transform hover:-translate-y-0.5">संपर्क करें</a>
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="lg:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-gray-700 hover:text-saffron-600 focus:outline-none p-2">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden lg:hidden bg-white border-t absolute w-full left-0 shadow-lg">
+            <div class="px-4 pt-2 pb-4 space-y-2 text-lg">
+                <a href="#home" class="block px-3 py-2 text-gray-700 hover:text-saffron-600 font-medium hover:bg-gray-50 rounded-md">होम</a>
+                <a href="#about" class="block px-3 py-2 text-gray-700 hover:text-saffron-600 font-medium hover:bg-gray-50 rounded-md">परिचय</a>
+                <a href="#leadership" class="block px-3 py-2 text-gray-700 hover:text-saffron-600 font-medium hover:bg-gray-50 rounded-md">अध्यक्ष</a>
+                <a href="#objectives" class="block px-3 py-2 text-gray-700 hover:text-saffron-600 font-medium hover:bg-gray-50 rounded-md">हमारे लक्ष्य</a>
+                <a href="#news-events" class="block px-3 py-2 text-gray-700 hover:text-saffron-600 font-medium hover:bg-gray-50 rounded-md">समाचार व कार्यक्रम</a>
+                <a href="#gallery" class="block px-3 py-2 text-gray-700 hover:text-saffron-600 font-medium hover:bg-gray-50 rounded-md">गैलरी</a>
+                <a href="#tools" class="block px-3 py-2 text-saffron-600 font-bold hover:bg-gray-50 rounded-md">✨ AI सहायता</a>
+                <a href="#contact" class="block px-3 py-2 text-white bg-saffron-500 font-bold rounded-md text-center mt-4">संपर्क करें</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-pattern min-h-[500px] md:h-[600px] flex items-center py-12 md:py-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center w-full">
+            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg leading-tight">
+                अखिल बिहार यादव महासभा <br><span class="text-3xl sm:text-4xl md:text-5xl text-saffron-400 mt-2 block">में आपका हार्दिक स्वागत है</span>
+            </h1>
+            <p class="text-xl sm:text-2xl text-gray-100 mb-10 max-w-4xl mx-auto font-medium drop-shadow-md leading-relaxed">
+                प्रगति, एकता और सामाजिक न्याय के लिए समर्पित। आइए मिलकर एक सशक्त, शिक्षित और समृद्ध समाज का निर्माण करें।
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
+                <a href="#about" class="bg-saffron-500 hover:bg-saffron-600 text-white font-bold text-lg py-3 px-8 rounded-full shadow-lg transition transform hover:scale-105">
+                    अधिक जानें
+                </a>
+                <a href="#contact" class="bg-white/20 backdrop-blur-sm border-2 border-white text-white hover:bg-white hover:text-navyBlue font-bold text-lg py-3 px-8 rounded-full shadow-lg transition transform hover:scale-105">
+                    हमसे जुड़ें
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-16 md:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row items-center gap-12">
+                <div class="lg:w-1/2 w-full">
+                    <img src="https://images.unsplash.com/photo-1525026198548-4baa0d2c3d93?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="सामुदायिक बैठक" class="rounded-xl shadow-xl w-full border-b-4 border-indiaGreen object-cover h-[300px] md:h-[400px]">
+                </div>
+                <div class="lg:w-1/2 w-full">
+                    <h4 class="text-saffron-600 font-bold text-lg tracking-wider mb-2">संगठन के बारे में</h4>
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">यदुवंशियों के सर्वांगीण विकास का प्रतीक</h2>
+                    <p class="text-gray-700 mb-5 text-lg leading-relaxed">
+                        <strong>अखिल बिहार यादव महासभा</strong> बिहार भर में यादव समाज के समग्र विकास, उत्थान और एकता के लिए समर्पित एक प्रमुख सामाजिक संगठन है। भगवान श्रीकृष्ण की शिक्षाओं पर आधारित, हम धर्म, साहस और मानवता की सेवा में विश्वास करते हैं।
+                    </p>
+                    <p class="text-gray-700 mb-8 text-lg leading-relaxed">
+                        हमारा उद्देश्य एक ऐसा समाज बनाना है जो शैक्षिक रूप से उन्नत, आर्थिक रूप से आत्मनिर्भर और सामाजिक रूप से जागरूक हो। हम हर पेशे और क्षेत्र में अपने युवाओं और परिवारों के सशक्तिकरण के लिए कार्य कर रहे हैं।
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex items-center text-gray-800 font-medium text-lg bg-gray-50 p-3 rounded-lg border-l-4 border-saffron-500">
+                            <i class="fas fa-check-circle text-indiaGreen mr-3 text-xl"></i> सामाजिक समानता
+                        </div>
+                        <div class="flex items-center text-gray-800 font-medium text-lg bg-gray-50 p-3 rounded-lg border-l-4 border-saffron-500">
+                            <i class="fas fa-check-circle text-indiaGreen mr-3 text-xl"></i> शैक्षिक सहयोग
+                        </div>
+                        <div class="flex items-center text-gray-800 font-medium text-lg bg-gray-50 p-3 rounded-lg border-l-4 border-saffron-500">
+                            <i class="fas fa-check-circle text-indiaGreen mr-3 text-xl"></i> रोजगार सृजन
+                        </div>
+                        <div class="flex items-center text-gray-800 font-medium text-lg bg-gray-50 p-3 rounded-lg border-l-4 border-saffron-500">
+                            <i class="fas fa-check-circle text-indiaGreen mr-3 text-xl"></i> सांस्कृतिक संरक्षण
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Leadership Section -->
+    <section id="leadership" class="py-16 md:py-24 bg-gray-100">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h4 class="text-indiaGreen font-bold text-lg tracking-wider mb-2">नेतृत्व</h4>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900">अध्यक्ष महोदय का संदेश</h2>
+                <div class="w-24 h-1 bg-saffron-500 mx-auto mt-4 rounded"></div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+                <!-- Image -->
+                <div class="md:w-2/5 bg-gray-200 relative h-64 md:h-auto">
+                    <img src="https://images.unsplash.com/photo-1555597673-b21d5c935865?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="श्री बाल्मीकि यादव" class="h-full w-full object-cover object-top">
+                    <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/70 to-transparent p-6 text-white">
+                        <h3 class="text-2xl md:text-3xl font-bold">श्री बाल्मीकि यादव</h3>
+                        <p class="text-lg md:text-xl text-saffron-400 font-medium mt-1">अध्यक्ष</p>
+                    </div>
+                </div>
+                
+                <!-- Message -->
+                <div class="md:w-3/5 p-8 md:p-12 flex flex-col justify-center relative">
+                    <i class="fas fa-quote-left text-5xl md:text-6xl text-gray-100 absolute top-6 left-6 md:top-8 md:left-8 -z-10"></i>
+                    <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6">"संगठन और शिक्षा ही हमारी असली शक्ति है"</h3>
+                    <p class="text-gray-700 mb-6 italic leading-relaxed text-lg">
+                        "अखिल बिहार यादव महासभा में मैं आप सभी का स्वागत करता हूँ। हमारा प्राथमिक लक्ष्य हमारे लोगों की शैक्षिक, आर्थिक और सामाजिक उन्नति है। हमें भेदभाव के खिलाफ लड़ने, अपने युवाओं को सही दिशा देने और व्यापार तथा रोजगार के नए अवसर पैदा करने के लिए एकजुट होना होगा।
+                        <br><br>
+                        महासभा के झंडे तले, हम मिलकर एक मजबूत, समृद्ध और सशक्त बिहार का निर्माण करेंगे। आइए सत्य और कर्म के आदर्शों के साथ आगे बढ़ें।"
+                    </p>
+                    <div class="mt-2 border-t pt-4 border-gray-100">
+                        <p class="font-bold text-navyBlue text-xl">बाल्मीकि यादव</p>
+                        <p class="text-base text-gray-500">अध्यक्ष, अखिल बिहार यादव महासभा</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Objectives Section -->
+    <section id="objectives" class="py-16 md:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h4 class="text-saffron-600 font-bold text-lg tracking-wider mb-2">हमारा मिशन</h4>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900">संगठन के मुख्य लक्ष्य</h2>
+                <div class="w-24 h-1 bg-indiaGreen mx-auto mt-4 rounded"></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="bg-gray-50 p-8 rounded-xl text-center border-b-4 border-saffron-500 shadow-md hover:shadow-xl transition duration-300">
+                    <div class="w-16 h-16 mx-auto bg-saffron-100 text-saffron-600 rounded-full flex items-center justify-center text-3xl mb-6">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">शिक्षा एवं छात्रवृत्ति</h3>
+                    <p class="text-gray-600 text-base">समाज के मेधावी और जरूरतमंद छात्रों के लिए शिक्षा के अवसर और छात्रवृत्ति प्रदान करना।</p>
+                </div>
+                
+                <div class="bg-gray-50 p-8 rounded-xl text-center border-b-4 border-indiaGreen shadow-md hover:shadow-xl transition duration-300">
+                    <div class="w-16 h-16 mx-auto bg-green-100 text-indiaGreen rounded-full flex items-center justify-center text-3xl mb-6">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">रोजगार एवं व्यापार</h3>
+                    <p class="text-gray-600 text-base">युवाओं को करियर मार्गदर्शन देना और समाज में उद्यमिता (Business) को बढ़ावा देना।</p>
+                </div>
+
+                <div class="bg-gray-50 p-8 rounded-xl text-center border-b-4 border-navyBlue shadow-md hover:shadow-xl transition duration-300">
+                    <div class="w-16 h-16 mx-auto bg-blue-100 text-navyBlue rounded-full flex items-center justify-center text-3xl mb-6">
+                        <i class="fas fa-hands-helping"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">सामाजिक कल्याण</h3>
+                    <p class="text-gray-600 text-base">दहेज प्रथा जैसी सामाजिक कुरीतियों को समाप्त करना और आपसी भाईचारे को मजबूत करना।</p>
+                </div>
+
+                <div class="bg-gray-50 p-8 rounded-xl text-center border-b-4 border-saffron-500 shadow-md hover:shadow-xl transition duration-300">
+                    <div class="w-16 h-16 mx-auto bg-saffron-100 text-saffron-600 rounded-full flex items-center justify-center text-3xl mb-6">
+                        <i class="fas fa-landmark"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">राजनीतिक भागीदारी</h3>
+                    <p class="text-gray-600 text-base">समाज को राजनीतिक रूप से जागरूक करना और लोकतांत्रिक प्रक्रियाओं में उचित प्रतिनिधित्व सुनिश्चित करना।</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- News & Events Section -->
+    <section id="news-events" class="py-16 md:py-24 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                
+                <!-- Latest News -->
+                <div>
+                    <div class="flex items-center gap-3 mb-8">
+                        <i class="fas fa-newspaper text-3xl text-saffron-500"></i>
+                        <h2 class="text-3xl font-bold text-gray-900">नवीनतम समाचार</h2>
+                    </div>
+                    <div class="space-y-6 h-[450px] overflow-y-auto no-scrollbar pr-2">
+                        <!-- News Item 1 -->
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition">
+                            <span class="text-sm font-bold text-indiaGreen mb-2 block">15 मार्च, 2026</span>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">पटना में युवा कौशल विकास शिविर का सफल आयोजन</h3>
+                            <p class="text-gray-600">महासभा द्वारा आयोजित शिविर में 500 से अधिक युवाओं ने भाग लिया। तकनीकी और व्यापारिक कौशल पर विशेषज्ञों ने मार्गदर्शन दिया।</p>
+                        </div>
+                        <!-- News Item 2 -->
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition">
+                            <span class="text-sm font-bold text-indiaGreen mb-2 block">10 मार्च, 2026</span>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">मेधावी छात्रों के लिए छात्रवृत्ति योजना की घोषणा</h3>
+                            <p class="text-gray-600">अध्यक्ष बाल्मीकि यादव ने 10वीं और 12वीं में उत्कृष्ट प्रदर्शन करने वाले समाज के छात्रों के लिए नई छात्रवृत्ति योजना की घोषणा की है।</p>
+                        </div>
+                        <!-- News Item 3 -->
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition">
+                            <span class="text-sm font-bold text-indiaGreen mb-2 block">28 फ़रवरी, 2026</span>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">सामूहिक विवाह सम्मेलन की रूपरेखा तैयार</h3>
+                            <p class="text-gray-600">दहेज प्रथा को रोकने के उद्देश्य से महासभा जल्द ही एक भव्य सामूहिक विवाह समारोह आयोजित करेगी।</p>
+                        </div>
+                         <!
