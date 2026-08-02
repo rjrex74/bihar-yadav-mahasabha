@@ -1,112 +1,862 @@
-<!DOCTYPE html>
-<html lang="hi" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>अखिल बिहार यादव महासभा | Akhil Bihar Yadav Mahasabha</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts for Hindi (Mukta) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+```react
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Shield, Users, MapPin, Bell, LogIn, 
+  LogOut, PlusCircle, Trash2, Home, 
+  Info, FileText, Menu, X, ChevronRight,
+  MessageSquare, UserCircle, Settings, Send
+} from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc } from 'firebase/firestore';
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        saffron: {
-                            500: '#FF9933',
-                            600: '#E68A2E',
-                            700: '#CC7A29',
-                        },
-                        indiaGreen: '#138808',
-                        navyBlue: '#000080'
-                    },
-                    fontFamily: {
-                        hindi: ['Mukta', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Mukta', sans-serif;
-        }
-        .hero-pattern {
-            background-color: #ffffff;
-            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1596414436573-0d53c7ce4222?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-        /* Loader animation for API calls */
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 3px solid #FF9933;
-            width: 20px;
-            height: 20px;
-            -webkit-animation: spin 1s linear infinite;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        /* Hide scrollbar for news section but keep functionality */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
-</head>
-<body class="bg-gray-50 text-gray-800 antialiased">
+// ==========================================
+// 1. FIREBASE CONFIGURATION
+// ==========================================
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'mss-connect-app';
 
-    <!-- Top Bar -->
-    <div class="bg-navyBlue text-white text-sm py-2 px-4 hidden md:block">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex space-x-6 font-medium">
-                <span><i class="fas fa-envelope mr-2 text-saffron-500"></i> info@biharyadavmahasabha.org</span>
-                <span><i class="fas fa-phone-alt mr-2 text-saffron-500"></i> +91 98765 43210</span>
-            </div>
-            <div class="flex space-x-4">
-                <a href="#" class="hover:text-saffron-500 transition"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="hover:text-saffron-500 transition"><i class="fab fa-twitter"></i></a>
-                <a href="#" class="hover:text-saffron-500 transition"><i class="fab fa-youtube"></i></a>
-            </div>
+// ==========================================
+// 2. ENTERPRISE DATA & CONSTANTS
+// ==========================================
+const CORE_COMMITTEE = [
+  { id: 1, name: 'श्री आनंद नारायण', role: 'मुख्य संयोजक', desc: 'संगठनात्मक संरचना एवं विस्तार' },
+  { id: 2, name: 'डॉ. विद्यासागर', role: 'मार्गदर्शक', desc: 'नीति निर्माण एवं दिशा-निर्देश' },
+  { id: 3, name: 'श्री राकेश सिंह', role: 'महासचिव', desc: 'प्रशासनिक एवं प्रबंधकीय कार्य' },
+  { id: 4, name: 'श्रीमती अनीता यादव', role: 'महिला प्रभाग प्रमुख', desc: 'महिला सशक्तिकरण एवं विकास' }
+];
+
+const OFFICE_ADDRESS = "यादव बैठकी ( MSS माधव शक्ति संगठन ): 📍 पटना , कुम्हरार , दाऊदबिगहा  (महावीर स्थान ) near Mahavir Asthan, Daud Bigha, Mahatma Gandhi Nagar, Kumhrar, Patna, Bihar 800026";
+
+// ==========================================
+// 3. MAIN APPLICATION ROUTER
+// ==========================================
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [authRole, setAuthRole] = useState(null); // 'admin' or 'user'
+  const [route, setRoute] = useState('landing'); // 'landing', 'login', 'app'
+  const [appTab, setAppTab] = useState('feed'); // 'feed', 'committee', 'profile'
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Authentication Initialization
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Auth Error:", error);
+      }
+    };
+    initAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = (role) => {
+    setAuthRole(role);
+    setRoute('app');
+    setAppTab('feed');
+  };
+
+  const handleLogout = () => {
+    setAuthRole(null);
+    setRoute('landing');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50">
+        <Shield className="w-12 h-12 text-orange-500 animate-pulse mb-4" />
+        <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-orange-500 animate-pulse w-1/2 rounded-full"></div>
         </div>
-    </div>
+      </div>
+    );
+  }
 
-    <!-- Navigation -->
-    <nav class="bg-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-20">
-                <div class="flex items-center">
-                    <!-- Logo -->
-                    <div class="flex-shrink-0 flex items-center gap-3">
-                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-saffron-500 flex items-center justify-center text-white text-xl md:text-2xl shadow-md border-2 border-indiaGreen">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="font-bold text-xl md:text-2xl text-saffron-600 leading-tight">अखिल बिहार यादव महासभा</span>
-                            <span class="text-[10px] md:text-xs font-semibold text-indiaGreen tracking-wider">सामाजिक न्याय और सशक्तिकरण</span>
-                        </div>
-                    </div>
+  // Route: App Shell (Authenticated)
+  if (route === 'app' && authRole) {
+    return (
+      <AppShell 
+        authRole={authRole} 
+        handleLogout={handleLogout} 
+        appTab={appTab} 
+        setAppTab={setAppTab}
+        user={user}
+      />
+    );
+  }
+
+  // Route: Login
+  if (route === 'login') {
+    return <LoginScreen setRoute={setRoute} handleLogin={handleLogin} />;
+  }
+
+  // Route: Landing (Default Public)
+  return <LandingScreen setRoute={setRoute} />;
+}
+
+// ==========================================
+// 4. AUTHENTICATED APP SHELL (NATIVE APP FEEL)
+// ==========================================
+const AppShell = ({ authRole, handleLogout, appTab, setAppTab, user }) => {
+  return (
+    <div className="flex h-screen w-full bg-slate-50 overflow-hidden text-slate-800 font-sans">
+      
+      {/* DESKTOP SIDEBAR */}
+      <aside className="hidden md:flex flex-col w-72 bg-slate-900 text-slate-300 shadow-2xl z-20">
+        <div className="p-6 bg-slate-950 flex items-center gap-3">
+          <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+            <Shield className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-white leading-tight">MSS Connect</h1>
+            <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Enterprise Portal</p>
+          </div>
+        </div>
+        
+        <div className="flex flex-col p-6 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <UserCircle className="w-12 h-12 text-slate-400" />
+            <div>
+              <p className="font-bold text-white">{authRole === 'admin' ? 'कमेटी सदस्य (Admin)' : 'स्वयंसेवक (User)'}</p>
+              <p className="text-xs text-green-400 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span> सक्रिय (Online)</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
+          <SidebarItem icon={<MessageSquare />} label="सूचना पट्ट (Feed)" active={appTab === 'feed'} onClick={() => setAppTab('feed')} />
+          <SidebarItem icon={<Users />} label="कोर समिति (Committee)" active={appTab === 'committee'} onClick={() => setAppTab('committee')} />
+          <SidebarItem icon={<MapPin />} label="कार्यालय (Location)" active={appTab === 'location'} onClick={() => setAppTab('location')} />
+        </nav>
+
+        <div className="p-4 border-t border-slate-800">
+          <button onClick={handleLogout} className="flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800 w-full p-3 rounded-xl transition-all font-medium">
+            <LogOut className="w-5 h-5" /> सुरक्षित लॉग आउट
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        {/* MOBILE TOP APP BAR */}
+        <header className="md:hidden bg-slate-900 text-white h-16 flex items-center justify-between px-4 shadow-md z-20 shrink-0">
+          <div className="flex items-center gap-2">
+            <Shield className="w-6 h-6 text-orange-500" />
+            <h1 className="font-bold text-lg">MSS Connect</h1>
+          </div>
+          <button onClick={handleLogout} className="p-2 text-slate-300 hover:text-white">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </header>
+
+        {/* SCROLLABLE VIEW AREA */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 bg-slate-50 relative z-10 scroll-smooth">
+          <div className="max-w-4xl mx-auto">
+            {appTab === 'feed' && <FeedView authRole={authRole} user={user} />}
+            {appTab === 'committee' && <CommitteeView />}
+            {appTab === 'location' && <LocationView />}
+          </div>
+        </main>
+
+        {/* MOBILE BOTTOM NAVIGATION */}
+        <nav className="md:hidden bg-white border-t border-slate-200 flex justify-around items-center h-16 absolute bottom-0 w-full z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-safe">
+          <BottomNavItem icon={<MessageSquare />} label="Feed" active={appTab === 'feed'} onClick={() => setAppTab('feed')} />
+          <BottomNavItem icon={<Users />} label="Committee" active={appTab === 'committee'} onClick={() => setAppTab('committee')} />
+          <BottomNavItem icon={<MapPin />} label="Location" active={appTab === 'location'} onClick={() => setAppTab('location')} />
+        </nav>
+
+      </div>
+    </div>
+  );
+};
+
+// Nav Components
+const SidebarItem = ({ icon, label, active, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all font-medium ${
+      active ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+    }`}
+  >
+    {React.cloneElement(icon, { className: 'w-5 h-5' })}
+    {label}
+  </button>
+);
+
+const BottomNavItem = ({ icon, label, active, onClick }) => (
+  <button onClick={onClick} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${active ? 'text-orange-500' : 'text-slate-400'}`}>
+    {React.cloneElement(icon, { className: `w-6 h-6 ${active ? 'animate-bounce-short' : ''}` })}
+    <span className="text-[10px] font-bold">{label}</span>
+  </button>
+);
+
+// ==========================================
+// 5. APP VIEWS (Tabs inside the App Shell)
+// ==========================================
+
+// VIEW: FEED & ANNOUNCEMENTS (Firebase Connected)
+const FeedView = ({ authRole, user }) => {
+  const [posts, setPosts] = useState([]);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const postsRef = collection(db, 'artifacts', appId, 'public', 'data', 'mss_posts');
+    const q = query(postsRef);
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      fetchedPosts.sort((a, b) => b.timestamp - a.timestamp);
+      setPosts(fetchedPosts);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  const handlePost = async (e) => {
+    e.preventDefault();
+    if (!title.trim() || !content.trim() || !user) return;
+    setIsPosting(true);
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mss_posts'), {
+        title: title.trim(),
+        content: content.trim(),
+        author: 'कोर समिति (Core Committee)',
+        timestamp: Date.now()
+      });
+      setTitle(''); setContent('');
+    } catch (err) {
+      console.error("Post error:", err);
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (authRole !== 'admin') return;
+    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'mss_posts', id));
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">सूचना पट्ट</h2>
+        <span className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">Live</span>
+      </div>
+
+      {authRole === 'admin' && (
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-8">
+          <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2"><PlusCircle className="w-4 h-4 text-orange-500"/> नया अपडेट पोस्ट करें</h3>
+          <form onSubmit={handlePost} className="space-y-3">
+            <input 
+              type="text" placeholder="शीर्षक (Title)" value={title} onChange={e => setTitle(e.target.value)} required
+              className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none font-bold"
+            />
+            <textarea 
+              placeholder="विस्तृत जानकारी लिखें..." value={content} onChange={e => setContent(e.target.value)} required rows="3"
+              className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+            />
+            <div className="flex justify-end">
+              <button disabled={isPosting} className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                {isPosting ? <span className="animate-spin"><PlusCircle className="w-4 h-4"/></span> : <Send className="w-4 h-4" />}
+                प्रकाशित करें
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {posts.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+            <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium">कोई नई सूचना नहीं है।</p>
+          </div>
+        ) : (
+          posts.map(post => (
+            <div key={post.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden group">
+              <div className="p-5 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700"><Shield className="w-5 h-5"/></div>
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm">{post.author}</p>
+                    <p className="text-xs text-slate-500">{new Date(post.timestamp).toLocaleString('hi-IN')}</p>
+                  </div>
                 </div>
-                
-                <!-- Desktop Menu -->
-                <div class="hidden lg:flex items-center space-x-5 xl:space-x-8 text-lg">
+                {authRole === 'admin' && (
+                  <button onClick={() => handleDelete(post.id)} className="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <div className="p-6">
+                <h4 className="text-lg font-bold text-slate-900 mb-2 leading-tight">{post.title}</h4>
+                <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+// VIEW: CORE COMMITTEE
+const CommitteeView = () => (
+  <div className="space-y-6 animate-in fade-in duration-300">
+    <div>
+      <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">केंद्रीय कोर समिति</h2>
+      <p className="text-sm text-slate-500 mt-1">संगठन के मार्गदर्शक एवं संचालक</p>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {CORE_COMMITTEE.map(member => (
+        <div key={member.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="w-16 h-16 rounded-full bg-slate-100 overflow-hidden shrink-0 border-2 border-orange-100">
+            {/* Using Initials as fallback if image fails, but using provided robust unsplash links */}
+            <img src={member.img} alt={member.name} className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-900">{member.name}</h4>
+            <p className="text-xs font-bold text-orange-600 uppercase tracking-wide">{member.role}</p>
+            <p className="text-xs text-slate-500 mt-1">{member.desc}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// VIEW: LOCATION
+const LocationView = () => (
+  <div className="space-y-6 animate-in fade-in duration-300">
+    <div>
+      <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">केंद्रीय कार्यालय</h2>
+      <p className="text-sm text-slate-500 mt-1">यादव बैठकी (MSS माधव शक्ति संगठन)</p>
+    </div>
+    
+    <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
+      <div className="aspect-video w-full bg-slate-200 relative">
+        <img src="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=800&q=80" alt="Office" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent flex items-end p-6">
+          <div className="text-white">
+            <h3 className="font-bold text-xl drop-shadow-md">MSS मुख्यालय</h3>
+            <p className="text-sm opacity-90 drop-shadow-md">पटना, बिहार</p>
+          </div>
+        </div>
+      </div>
+      <div className="p-6 md:p-8 bg-white">
+        <div className="flex items-start gap-4">
+          <div className="bg-orange-100 p-3 rounded-2xl shrink-0"><MapPin className="w-6 h-6 text-orange-600" /></div>
+          <div>
+            <h4 className="font-bold text-slate-900 text-lg mb-2">पूर्ण पता:</h4>
+            <p className="text-slate-600 leading-relaxed text-sm font-medium">
+              📍 पटना, कुम्हरार, दाऊदबिगहा (महावीर स्थान)<br/>
+              near Mahavir Asthan, Daud Bigha, Mahatma Gandhi Nagar, <br/>
+              Kumhrar, Patna, Bihar 800026
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// ==========================================
+// 6. LOGIN SCREEN
+// ==========================================
+const LoginScreen = ({ setRoute, handleLogin }) => {
+  const [passkey, setPasskey] = useState('');
+  const [error, setError] = useState('');
+
+  const submitAuth = (e) => {
+    e.preventDefault();
+    if (passkey === 'ADMIN123') handleLogin('admin');
+    else if (passkey === 'USER123') handleLogin('user');
+    else setError('अमान्य पासकी। कृपया पुनः प्रयास करें।');
+  };
+
+  return (
+    <div className="h-screen w-full flex bg-slate-50 relative overflow-hidden">
+      {/* Decorative Background */}
+      <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-blue-900 rounded-full blur-[120px] opacity-20"></div>
+      <div className="absolute top-[60%] -right-[10%] w-[50%] h-[50%] bg-orange-500 rounded-full blur-[120px] opacity-20"></div>
+
+      <div className="m-auto w-full max-w-md px-4 relative z-10 animate-in slide-in-from-bottom-8 duration-500">
+        <button onClick={() => setRoute('landing')} className="mb-6 flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm w-fit border border-slate-200 shadow-sm">
+          <ChevronRight className="w-4 h-4 rotate-180" /> मुख्य पृष्ठ पर लौटें
+        </button>
+
+        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-orange-500/30 mb-5">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-extrabold text-slate-900">एंटरप्राइज एक्सेस</h2>
+            <p className="text-slate-500 text-sm mt-1 font-medium">MSS Connect में सुरक्षित प्रवेश</p>
+          </div>
+
+          {error && <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-bold text-center">{error}</div>}
+
+          <form onSubmit={submitAuth} className="space-y-5">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">एक्सेस पासकी (Passkey)</label>
+              <input 
+                type="password" value={passkey} onChange={e => {setPasskey(e.target.value); setError('');}} required placeholder="••••••••"
+                className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono tracking-widest shadow-sm"
+              />
+            </div>
+            <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2">
+              <LogIn className="w-5 h-5" /> सिस्टम में प्रवेश करें
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-slate-200">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center mb-3">डेमो क्रेडेंशियल्स</p>
+            <div className```react
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Shield, Users, MapPin, Bell, LogIn, 
+  LogOut, PlusCircle, Trash2, Home, 
+  Info, FileText, Menu, X, ChevronRight,
+  MessageSquare, UserCircle, Settings, Send
+} from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc } from 'firebase/firestore';
+
+// ==========================================
+// 1. FIREBASE CONFIGURATION
+// ==========================================
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'mss-connect-app';
+
+// ==========================================
+// 2. ENTERPRISE DATA & CONSTANTS
+// ==========================================
+const CORE_COMMITTEE = [
+  { id: 1, name: 'श्री आनंद नारायण', role: 'मुख्य संयोजक', desc: 'संगठनात्मक संरचना एवं विस्तार' },
+  { id: 2, name: 'डॉ. विद्यासागर', role: 'मार्गदर्शक', desc: 'नीति निर्माण एवं दिशा-निर्देश' },
+  { id: 3, name: 'श्री राकेश सिंह', role: 'महासचिव', desc: 'प्रशासनिक एवं प्रबंधकीय कार्य' },
+  { id: 4, name: 'श्रीमती अनीता यादव', role: 'महिला प्रभाग प्रमुख', desc: 'महिला सशक्तिकरण एवं विकास' }
+];
+
+const OFFICE_ADDRESS = "यादव बैठकी ( MSS माधव शक्ति संगठन ): 📍 पटना , कुम्हरार , दाऊदबिगहा  (महावीर स्थान ) near Mahavir Asthan, Daud Bigha, Mahatma Gandhi Nagar, Kumhrar, Patna, Bihar 800026";
+
+// ==========================================
+// 3. MAIN APPLICATION ROUTER
+// ==========================================
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [authRole, setAuthRole] = useState(null); // 'admin' or 'user'
+  const [route, setRoute] = useState('landing'); // 'landing', 'login', 'app'
+  const [appTab, setAppTab] = useState('feed'); // 'feed', 'committee', 'profile'
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Authentication Initialization
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Auth Error:", error);
+      }
+    };
+    initAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = (role) => {
+    setAuthRole(role);
+    setRoute('app');
+    setAppTab('feed');
+  };
+
+  const handleLogout = () => {
+    setAuthRole(null);
+    setRoute('landing');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50">
+        <Shield className="w-12 h-12 text-orange-500 animate-pulse mb-4" />
+        <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-orange-500 animate-pulse w-1/2 rounded-full"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Route: App Shell (Authenticated)
+  if (route === 'app' && authRole) {
+    return (
+      <AppShell 
+        authRole={authRole} 
+        handleLogout={handleLogout} 
+        appTab={appTab} 
+        setAppTab={setAppTab}
+        user={user}
+      />
+    );
+  }
+
+  // Route: Login
+  if (route === 'login') {
+    return <LoginScreen setRoute={setRoute} handleLogin={handleLogin} />;
+  }
+
+  // Route: Landing (Default Public)
+  return <LandingScreen setRoute={setRoute} />;
+}
+
+// ==========================================
+// 4. AUTHENTICATED APP SHELL (NATIVE APP FEEL)
+// ==========================================
+const AppShell = ({ authRole, handleLogout, appTab, setAppTab, user }) => {
+  return (
+    <div className="flex h-screen w-full bg-slate-50 overflow-hidden text-slate-800 font-sans">
+      
+      {/* DESKTOP SIDEBAR */}
+      <aside className="hidden md:flex flex-col w-72 bg-slate-900 text-slate-300 shadow-2xl z-20">
+        <div className="p-6 bg-slate-950 flex items-center gap-3">
+          <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+            <Shield className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-white leading-tight">MSS Connect</h1>
+            <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Enterprise Portal</p>
+          </div>
+        </div>
+        
+        <div className="flex flex-col p-6 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <UserCircle className="w-12 h-12 text-slate-400" />
+            <div>
+              <p className="font-bold text-white">{authRole === 'admin' ? 'कमेटी सदस्य (Admin)' : 'स्वयंसेवक (User)'}</p>
+              <p className="text-xs text-green-400 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span> सक्रिय (Online)</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
+          <SidebarItem icon={<MessageSquare />} label="सूचना पट्ट (Feed)" active={appTab === 'feed'} onClick={() => setAppTab('feed')} />
+          <SidebarItem icon={<Users />} label="कोर समिति (Committee)" active={appTab === 'committee'} onClick={() => setAppTab('committee')} />
+          <SidebarItem icon={<MapPin />} label="कार्यालय (Location)" active={appTab === 'location'} onClick={() => setAppTab('location')} />
+        </nav>
+
+        <div className="p-4 border-t border-slate-800">
+          <button onClick={handleLogout} className="flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800 w-full p-3 rounded-xl transition-all font-medium">
+            <LogOut className="w-5 h-5" /> सुरक्षित लॉग आउट
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        {/* MOBILE TOP APP BAR */}
+        <header className="md:hidden bg-slate-900 text-white h-16 flex items-center justify-between px-4 shadow-md z-20 shrink-0">
+          <div className="flex items-center gap-2">
+            <Shield className="w-6 h-6 text-orange-500" />
+            <h1 className="font-bold text-lg">MSS Connect</h1>
+          </div>
+          <button onClick={handleLogout} className="p-2 text-slate-300 hover:text-white">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </header>
+
+        {/* SCROLLABLE VIEW AREA */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 bg-slate-50 relative z-10 scroll-smooth">
+          <div className="max-w-4xl mx-auto">
+            {appTab === 'feed' && <FeedView authRole={authRole} user={user} />}
+            {appTab === 'committee' && <CommitteeView />}
+            {appTab === 'location' && <LocationView />}
+          </div>
+        </main>
+
+        {/* MOBILE BOTTOM NAVIGATION */}
+        <nav className="md:hidden bg-white border-t border-slate-200 flex justify-around items-center h-16 absolute bottom-0 w-full z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-safe">
+          <BottomNavItem icon={<MessageSquare />} label="Feed" active={appTab === 'feed'} onClick={() => setAppTab('feed')} />
+          <BottomNavItem icon={<Users />} label="Committee" active={appTab === 'committee'} onClick={() => setAppTab('committee')} />
+          <BottomNavItem icon={<MapPin />} label="Location" active={appTab === 'location'} onClick={() => setAppTab('location')} />
+        </nav>
+
+      </div>
+    </div>
+  );
+};
+
+// Nav Components
+const SidebarItem = ({ icon, label, active, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all font-medium ${
+      active ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+    }`}
+  >
+    {React.cloneElement(icon, { className: 'w-5 h-5' })}
+    {label}
+  </button>
+);
+
+const BottomNavItem = ({ icon, label, active, onClick }) => (
+  <button onClick={onClick} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${active ? 'text-orange-500' : 'text-slate-400'}`}>
+    {React.cloneElement(icon, { className: `w-6 h-6 ${active ? 'animate-bounce-short' : ''}` })}
+    <span className="text-[10px] font-bold">{label}</span>
+  </button>
+);
+
+// ==========================================
+// 5. APP VIEWS (Tabs inside the App Shell)
+// ==========================================
+
+// VIEW: FEED & ANNOUNCEMENTS (Firebase Connected)
+const FeedView = ({ authRole, user }) => {
+  const [posts, setPosts] = useState([]);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const postsRef = collection(db, 'artifacts', appId, 'public', 'data', 'mss_posts');
+    const q = query(postsRef);
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      fetchedPosts.sort((a, b) => b.timestamp - a.timestamp);
+      setPosts(fetchedPosts);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  const handlePost = async (e) => {
+    e.preventDefault();
+    if (!title.trim() || !content.trim() || !user) return;
+    setIsPosting(true);
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mss_posts'), {
+        title: title.trim(),
+        content: content.trim(),
+        author: 'कोर समिति (Core Committee)',
+        timestamp: Date.now()
+      });
+      setTitle(''); setContent('');
+    } catch (err) {
+      console.error("Post error:", err);
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (authRole !== 'admin') return;
+    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'mss_posts', id));
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">सूचना पट्ट</h2>
+        <span className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">Live</span>
+      </div>
+
+      {authRole === 'admin' && (
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-8">
+          <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2"><PlusCircle className="w-4 h-4 text-orange-500"/> नया अपडेट पोस्ट करें</h3>
+          <form onSubmit={handlePost} className="space-y-3">
+            <input 
+              type="text" placeholder="शीर्षक (Title)" value={title} onChange={e => setTitle(e.target.value)} required
+              className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none font-bold"
+            />
+            <textarea 
+              placeholder="विस्तृत जानकारी लिखें..." value={content} onChange={e => setContent(e.target.value)} required rows="3"
+              className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+            />
+            <div className="flex justify-end">
+              <button disabled={isPosting} className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                {isPosting ? <span className="animate-spin"><PlusCircle className="w-4 h-4"/></span> : <Send className="w-4 h-4" />}
+                प्रकाशित करें
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {posts.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+            <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium">कोई नई सूचना नहीं है।</p>
+          </div>
+        ) : (
+          posts.map(post => (
+            <div key={post.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden group">
+              <div className="p-5 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700"><Shield className="w-5 h-5"/></div>
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm">{post.author}</p>
+                    <p className="text-xs text-slate-500">{new Date(post.timestamp).toLocaleString('hi-IN')}</p>
+                  </div>
+                </div>
+                {authRole === 'admin' && (
+                  <button onClick={() => handleDelete(post.id)} className="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <div className="p-6">
+                <h4 className="text-lg font-bold text-slate-900 mb-2 leading-tight">{post.title}</h4>
+                <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+// VIEW: CORE COMMITTEE
+const CommitteeView = () => (
+  <div className="space-y-6 animate-in fade-in duration-300">
+    <div>
+      <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">केंद्रीय कोर समिति</h2>
+      <p className="text-sm text-slate-500 mt-1">संगठन के मार्गदर्शक एवं संचालक</p>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {CORE_COMMITTEE.map(member => (
+        <div key={member.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="w-16 h-16 rounded-full bg-slate-100 overflow-hidden shrink-0 border-2 border-orange-100">
+            {/* Using Initials as fallback if image fails, but using provided robust unsplash links */}
+            <img src={member.img} alt={member.name} className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-900">{member.name}</h4>
+            <p className="text-xs font-bold text-orange-600 uppercase tracking-wide">{member.role}</p>
+            <p className="text-xs text-slate-500 mt-1">{member.desc}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// VIEW: LOCATION
+const LocationView = () => (
+  <div className="space-y-6 animate-in fade-in duration-300">
+    <div>
+      <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">केंद्रीय कार्यालय</h2>
+      <p className="text-sm text-slate-500 mt-1">यादव बैठकी (MSS माधव शक्ति संगठन)</p>
+    </div>
+    
+    <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
+      <div className="aspect-video w-full bg-slate-200 relative">
+        <img src="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=800&q=80" alt="Office" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent flex items-end p-6">
+          <div className="text-white">
+            <h3 className="font-bold text-xl drop-shadow-md">MSS मुख्यालय</h3>
+            <p className="text-sm opacity-90 drop-shadow-md">पटना, बिहार</p>
+          </div>
+        </div>
+      </div>
+      <div className="p-6 md:p-8 bg-white">
+        <div className="flex items-start gap-4">
+          <div className="bg-orange-100 p-3 rounded-2xl shrink-0"><MapPin className="w-6 h-6 text-orange-600" /></div>
+          <div>
+            <h4 className="font-bold text-slate-900 text-lg mb-2">पूर्ण पता:</h4>
+            <p className="text-slate-600 leading-relaxed text-sm font-medium">
+              📍 पटना, कुम्हरार, दाऊदबिगहा (महावीर स्थान)<br/>
+              near Mahavir Asthan, Daud Bigha, Mahatma Gandhi Nagar, <br/>
+              Kumhrar, Patna, Bihar 800026
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// ==========================================
+// 6. LOGIN SCREEN
+// ==========================================
+const LoginScreen = ({ setRoute, handleLogin }) => {
+  const [passkey, setPasskey] = useState('');
+  const [error, setError] = useState('');
+
+  const submitAuth = (e) => {
+    e.preventDefault();
+    if (passkey === 'ADMIN123') handleLogin('admin');
+    else if (passkey === 'USER123') handleLogin('user');
+    else setError('अमान्य पासकी। कृपया पुनः प्रयास करें।');
+  };
+
+  return (
+    <div className="h-screen w-full flex bg-slate-50 relative overflow-hidden">
+      {/* Decorative Background */}
+      <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-blue-900 rounded-full blur-[120px] opacity-20"></div>
+      <div className="absolute top-[60%] -right-[10%] w-[50%] h-[50%] bg-orange-500 rounded-full blur-[120px] opacity-20"></div>
+
+      <div className="m-auto w-full max-w-md px-4 relative z-10 animate-in slide-in-from-bottom-8 duration-500">
+        <button onClick={() => setRoute('landing')} className="mb-6 flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm w-fit border border-slate-200 shadow-sm">
+          <ChevronRight className="w-4 h-4 rotate-180" /> मुख्य पृष्ठ पर लौटें
+        </button>
+
+        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-orange-500/30 mb-5">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-extrabold text-slate-900">एंटरप्राइज एक्सेस</h2>
+            <p className="text-slate-500 text-sm mt-1 font-medium">MSS Connect में सुरक्षित प्रवेश</p>
+          </div>
+
+          {error && <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-bold text-center">{error}</div>}
+
+          <form onSubmit={submitAuth} className="space-y-5">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">एक्सेस पासकी (Passkey)</label>
+              <input 
+                type="password" value={passkey} onChange={e => {setPasskey(e.target.value); setError('');}} required placeholder="••••••••"
+                className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono tracking-widest shadow-sm"
+              />
+            </div>
+            <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2">
+              <LogIn className="w-5 h-5" /> सिस्टम में प्रवेश करें
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-slate-200">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center mb-3">डेमो क्रेडेंशियल्स</p>
+            <div classNa                <div class="hidden lg:flex items-center space-x-5 xl:space-x-8 text-lg">
                     <a href="#home" class="text-gray-700 hover:text-saffron-600 font-medium transition">होम</a>
                     <a href="#about" class="text-gray-700 hover:text-saffron-600 font-medium transition">परिचय</a>
                     <a href="#leadership" class="text-gray-700 hover:text-saffron-600 font-medium transition">अध्यक्ष</a>
